@@ -66,6 +66,7 @@ Free-tier limits are set by each provider and may change.
 hz                        # start an interactive chat
 hz chat --resume          # resume the most recent chat
 hz chat --model <name>    # prefer a specific model
+hz prefer quality         # rank models by quality, speed, coding, or balanced
 hz ask "question"         # single response, then exit
 cat log.txt | hz ask "summarize this"
 hz rank --probe           # benchmark and rank available models
@@ -89,7 +90,7 @@ hz help                   # full command list
 /modelprompt <pattern> = <text>    standing instructions for matching models
 /report [note]                flag that the handover prompt failed on a model
 /handover visible | silent    show or hide the handover exchange
-/prefer balanced | speed | quality | coding
+/prefer [mode] [--once]       set the ranking mode (saved as default unless --once)
 /context                      show context usage
 /help                         list all commands
 ```
@@ -115,6 +116,17 @@ Before the first message to a new model, Horizon sends a handover prompt and dis
 If a model does not follow the handover, `/report` marks it so it receives a stricter prompt in future. A custom prompt can also be set for it with `/onswitch-for`. The visible handover uses one additional request per switch; `/handover silent` includes the prompt in the next request instead.
 
 Latency and reliability are recorded from normal use and factored into future rankings.
+
+### Ranking modes
+
+| Mode | Behavior |
+|---|---|
+| `balanced` | Default. Weighs quality, speed, remaining quota, and context size. |
+| `quality` | Favors the most capable models, even when they are slower. |
+| `speed` | Favors the fastest-responding models. |
+| `coding` | Like `quality`, with extra weight for models known for code. |
+
+Set the default with `hz prefer <mode>` or `/prefer <mode>`. Use `--prefer <mode>` on `hz chat`, `hz ask`, or `hz rank`, or `/prefer <mode> --once`, to apply a mode without changing the default.
 
 ## Configuration
 
