@@ -1,137 +1,124 @@
 <p align="center">
-  <img src="logo.png" alt="Horizon CLI" width="520">
+  <img src="logo.png" alt="Horizon CLI" width="480">
 </p>
 
-<h1 align="center">Horizon CLI</h1>
+# Horizon CLI
 
-<p align="center">
-  <b>The best free AI models in your terminal, switching automatically so you never hit a wall.</b><br>
-  Windows · macOS · free models only · your keys stay on your machine
-</p>
+A terminal chat client for free AI model APIs. Horizon finds the free models available to your API keys, ranks them, and routes each message to the best one. When a model is rate limited or fails, it moves to the next one and keeps the conversation intact.
 
-<p align="center">
-  <a href="../../releases/latest"><b>⬇ Download the latest release</b></a>
-</p>
+Supports Windows and macOS. Works with NVIDIA NIM, OpenRouter, Groq, Cerebras, Google AI Studio, Mistral, and any OpenAI-compatible endpoint.
 
----
+**[Download the latest release](../../releases/latest)**
 
-## What it does
+## Features
 
-Free AI APIs are great until you hit a rate limit mid-conversation. Horizon CLI fixes that:
+- Live discovery of free models from each provider
+- Ranking based on model quality, measured latency, remaining quota, and context size
+- Automatic failover on rate limits, quota exhaustion, errors, and timeouts
+- Conversation history carried across model switches, with older messages summarized when a model has a smaller context window
+- A configurable handover prompt sent to each new model, with its response shown so you can confirm it has the context
+- Pinned instructions and per-model prompts
+- Saved, resumable chat sessions
+- One-shot mode with stdin support for use in scripts
 
-- **Finds every free model** across NVIDIA NIM, OpenRouter, Groq, Cerebras, Google AI Studio and Mistral, live, every time.
-- **Ranks them** on quality, real measured speed, how much quota you have left, and context size, then picks the best one.
-- **Switches automatically** when a model hits a limit, errors or times out, and resends your message so you don't notice.
-- **Keeps your context** across switches. If the next model has a smaller window, older messages get compressed into a summary instead of lost.
-- **Briefs the new model** on every switch, and shows you its reply so you can see it's caught up.
+## Installation
+
+Download the file for your system from the [releases page](../../releases/latest):
+
+| System | File |
+|---|---|
+| Windows (x64) | `horizon-windows-amd64.exe` |
+| Windows (ARM) | `horizon-windows-arm64.exe` |
+| macOS (Intel and Apple Silicon) | `horizon-macos` |
+
+### Windows
+
+Run the executable. Windows SmartScreen may show a warning because the binary is not code signed; choose **More info**, then **Run anyway**. Accept the install prompt to add `hz` to your PATH.
+
+### macOS
+
+```sh
+chmod +x horizon-macos
+xattr -d com.apple.quarantine horizon-macos
+./horizon-macos
+```
+
+The `xattr` command removes the Gatekeeper quarantine flag, since the binary is not notarized. Accept the install prompt to add `hz` to your PATH, then open a new terminal.
+
+## API keys
+
+The first run walks you through adding keys. Each provider offers a free tier. At least one key is required, and two or more are recommended so failover has somewhere to go.
+
+| Provider | Key page |
+|---|---|
+| Groq | https://console.groq.com/keys |
+| NVIDIA NIM | https://build.nvidia.com/settings/api-keys |
+| OpenRouter | https://openrouter.ai/settings/keys |
+| Google AI Studio | https://aistudio.google.com/apikey |
+| Cerebras | https://cloud.cerebras.ai/platform |
+| Mistral | https://console.mistral.ai/api-keys |
+
+Free-tier limits are set by each provider and may change.
+
+## Usage
+
+```sh
+hz                        # start an interactive chat
+hz chat --resume          # resume the most recent chat
+hz chat --model <name>    # prefer a specific model
+hz ask "question"         # single response, then exit
+cat log.txt | hz ask "summarize this"
+hz rank --probe           # benchmark and rank available models
+hz models                 # list discovered models
+hz setup                  # add or change API keys
+hz sessions               # list saved chats
+hz help                   # full command list
+```
+
+### Chat commands
 
 ```
-› which file did we say was broken?
+/model                        show the current and next model
+/switch [name]                switch models now
+/use <name> | auto            prefer a model, or return to automatic selection
+/models                       show the current ranking
+/pin <text>                   add an instruction for this chat (/pin! for all chats)
+/pins, /unpin <n>             list or remove pins
+/onswitch [text]              view or set the handover prompt
+/onswitch-for <pattern> = <text>   handover prompt for matching models
+/modelprompt <pattern> = <text>    standing instructions for matching models
+/report [note]                flag that the handover prompt failed on a model
+/handover visible | silent    show or hide the handover exchange
+/prefer balanced | speed | quality | coding
+/context                      show context usage
+/help                         list all commands
+```
+
+Patterns support `*` wildcards and match either `provider/model` or the model name, for example `*deepseek*`.
+
+End a line with `\` or wrap text in `"""` for multi-line input. Press Ctrl+C to stop a response.
+
+## How model switching works
+
+Horizon stays on the current model as long as it is responding. When a request fails, the model is placed on a short cooldown and the message is retried on the next-ranked model.
+
+Before the first message to a new model, Horizon sends a handover prompt and displays the reply:
+
+```
 ◉ crossed horizon → nim/qwen3-235b  (groq/llama-3.3-70b: 429 rate limit)
   ┌ handover → nim/qwen3-235b
   │ sent:  You are taking over an ongoing conversation...
   │ reply: Caught up: we're debugging the login script in auth.py.
   └ didn't land? /report
-It was auth.py: the token check on line 42.
-◉ nim/qwen3-235b · 39/40 rpm · ctx 2k/128k
 ```
 
-## Download
+If a model does not follow the handover, `/report` marks it so it receives a stricter prompt in future. A custom prompt can also be set for it with `/onswitch-for`. The visible handover uses one additional request per switch; `/handover silent` includes the prompt in the next request instead.
 
-| Your computer | File |
-|---|---|
-| Windows (most PCs) | [`horizon-windows-amd64.exe`](../../releases/latest/download/horizon-windows-amd64.exe) |
-| Windows on ARM | [`horizon-windows-arm64.exe`](../../releases/latest/download/horizon-windows-arm64.exe) |
-| Mac (Intel or Apple Silicon) | [`horizon-macos`](../../releases/latest/download/horizon-macos) |
+Latency and reliability are recorded from normal use and factored into future rankings.
 
-Not sure which Windows you have? Pick **amd64**.
+## Configuration
 
-## Install
-
-### Windows
-1. Double-click `horizon-windows-amd64.exe`.
-2. If you see **"Windows protected your PC"**, click **More info**, then **Run anyway**. The app isn't code-signed yet, so Windows doesn't recognize it.
-3. Say **yes** when it offers to install. Then open any terminal and type `hz`.
-
-### macOS
-```sh
-chmod +x ~/Downloads/horizon-macos
-xattr -d com.apple.quarantine ~/Downloads/horizon-macos
-~/Downloads/horizon-macos
-```
-Say **yes** when it offers to install, then open a new Terminal window and type `hz`.
-
-> The `xattr` line clears macOS's "unidentified developer" block. The app isn't notarized yet.
-
-## Get free API keys
-
-The first run walks you through this. Each key is free and takes about a minute. You need at least one, and **two or more** gives auto-switching something to switch to.
-
-| Provider | Get a key | Good for |
-|---|---|---|
-| **Groq** | [console.groq.com/keys](https://console.groq.com/keys) | Very fast, generous daily limits, the best first key |
-| **NVIDIA NIM** | [build.nvidia.com](https://build.nvidia.com/settings/api-keys) | Big models, no daily cap |
-| **OpenRouter** | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) | Widest model selection |
-| **Google AI Studio** | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | Gemini, huge context |
-| **Cerebras** | [cloud.cerebras.ai](https://cloud.cerebras.ai/platform) | Fastest output, small context |
-| **Mistral** | [console.mistral.ai/api-keys](https://console.mistral.ai/api-keys) | Needs phone verification |
-
-Free-tier limits are set by each provider and change often.
-
-## Usage
-
-```sh
-hz                          # start chatting
-hz chat --resume            # pick up your last chat
-hz ask "explain DNS"        # one quick answer
-cat error.log | hz ask "why is this crashing?"
-hz rank --probe             # test and rank every free model
-hz setup                    # add or change keys
-hz help                     # everything else
-```
-
-### In a chat
-
-| Command | What it does |
-|---|---|
-| `/model` | See which model is answering, and which is next |
-| `/switch` | Move to the next best model now |
-| `/use <name>` | Prefer a model (`/use auto` to go back) |
-| `/pin <text>` | A fact every model always sees in this chat (`/pin!` for every chat) |
-| `/onswitch <text>` | Change the briefing sent to a model when it takes over |
-| `/onswitch-for <pattern> = <text>` | A takeover briefing just for certain models |
-| `/modelprompt <pattern> = <text>` | Always-on instructions for certain models |
-| `/report [note]` | The takeover briefing didn't work on this model |
-| `/handover visible\|silent` | Show or hide the takeover exchange |
-| `/prefer speed\|quality\|coding` | Change how models are ranked |
-| `/context` | See how much of the conversation is kept |
-| `/help` | All commands |
-
-Patterns use `*` as a wildcard, e.g. `/modelprompt *deepseek* = Keep your reasoning short.`
-
-Multi-line input: end a line with `\`, or wrap a block in `"""`. **Ctrl+C** stops a reply.
-
-## How switching works
-
-1. Every turn goes to the current model if it's still healthy. Horizon doesn't hop around for no reason.
-2. If it fails (rate limit, quota used up, error, timeout, empty reply), that model goes on a cooldown and the next best one gets your message.
-3. The new model gets a **takeover briefing** and you see its reply. If it clearly didn't take, type `/report`. That model gets a stronger briefing from then on, and you can write it its own with `/onswitch-for`.
-4. Speed and reliability are measured from real use, so the ranking gets better the more you use it.
-
-> Visible takeovers cost one extra request per switch. `/handover silent` sends the briefing inside the next request instead.
-
-## Privacy
-
-- API keys are stored in your system keychain (Windows Credential Manager or macOS Keychain) and are only sent to the provider they belong to.
-- Chats, settings and usage counters are saved locally:
-  - Windows: `%AppData%\horizon-cli\`
-  - macOS: `~/Library/Application Support/horizon-cli/`
-- There's no telemetry, account or server. Horizon talks only to the AI providers you add.
-- What you type goes to whichever provider is answering, under that provider's terms. Some free tiers may use prompts for training.
-
-## Config
-
-Run `hz config edit` to open `config.toml`. There you can change the system prompt, pins, takeover briefings, per-model prompts, ranking weights, per-provider limits, and add any OpenAI-compatible endpoint (like a local LM Studio server):
+`hz config edit` opens the configuration file, which controls the system prompt, pins, handover prompts, ranking weights, and per-provider rate limits. Additional OpenAI-compatible endpoints can be added:
 
 ```toml
 [[custom]]
@@ -139,30 +126,35 @@ name = "lmstudio"
 base_url = "http://localhost:1234/v1"
 ```
 
-## Verify your download
+## Data and privacy
 
-Checksums for each release are in [`SHA256SUMS.txt`](SHA256SUMS.txt).
+API keys are stored in the operating system keychain (Windows Credential Manager or macOS Keychain) and are sent only to their respective providers. Chats, settings, and usage data are stored locally:
 
-```sh
-# macOS
-shasum -a 256 horizon-macos
-# Windows (PowerShell)
-Get-FileHash horizon-windows-amd64.exe
-```
+- Windows: `%AppData%\horizon-cli\`
+- macOS: `~/Library/Application Support/horizon-cli/`
+
+Horizon has no telemetry and no backend. Messages are sent to whichever provider is handling the request and are subject to that provider's terms. Some free tiers may use submitted data for training.
 
 ## Updating
 
-Download the new version and run it. It will offer to **replace your installed `hz`**. Your keys and chats are kept.
+Run the newly downloaded binary. It will offer to replace the installed version. Keys and chats are preserved.
 
-## Uninstall
+## Uninstalling
 
 ```sh
-hz uninstall          # remove the program, keep your keys and chats
-hz uninstall --all    # remove everything: program, PATH entry, keys, chats, settings
+hz uninstall          # remove the program
+hz uninstall --all    # remove the program, PATH entry, keys, chats, and settings
 ```
 
-`--all` asks you to type `yes` before deleting anything.
+## Verifying downloads
+
+SHA-256 checksums for each release are listed in [SHA256SUMS.txt](SHA256SUMS.txt).
+
+```sh
+shasum -a 256 horizon-macos                # macOS
+Get-FileHash horizon-windows-amd64.exe     # Windows PowerShell
+```
 
 ---
 
-<p align="center"><sub>Horizon CLI isn't affiliated with any AI provider. Free tiers are provided by each service and can change at any time.</sub></p>
+Horizon CLI is not affiliated with any of the providers listed above.
