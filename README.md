@@ -6,6 +6,8 @@
 
 [![Discord](https://img.shields.io/badge/Discord-Join%20for%20support-5865F2?logo=discord&logoColor=white)](https://discord.gg/ENayFjKwHe)
 
+**if you do not trust us, feel free to run through [VirusTotal](virustotal.com)**
+
 A terminal chat client for free AI model APIs. Horizon finds the free models available to your API keys, ranks them, and routes each message to the best one. When a model is rate limited or fails, it moves to the next one and keeps the conversation intact.
 
 Supports Windows and macOS. Works with NVIDIA NIM, OpenRouter, Groq, Cerebras, Google AI Studio, Mistral, and any OpenAI-compatible endpoint.
